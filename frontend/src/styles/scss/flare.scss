@@ -1,0 +1,252 @@
+@use "sass:color";
+@import url('https://fonts.googleapis.com/css2?family=Afacad+Flux:wght@100..1000&display=swap');
+
+/*
+Global styles for the overlay
+This of course will be organized better for Smash Soda,
+this is just me trying to go quickly. :D
+*/
+$color-primary: #312d2b;
+$color-secondary: #f1ecd4;
+$color-tertiary: #e9cb41;
+$color-quaternary: #b04329;
+
+$font-primary: 'Afacad Flux', sans-serif;
+
+* {
+    box-sizing: border-box;
+}
+
+input {
+    outline: none;
+    border: solid 1px rgba(255, 255, 255, 0.1);
+}
+
+.raised {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.panel {
+    font-primary: $font-primary;
+}
+
+.window {
+    opacity: 1;
+    background: linear-gradient(180deg, $color-primary, color.adjust($color-primary, $lightness: -5%));
+    color: $color-secondary;
+    border-radius: 8px;
+
+    &.center {
+        border-bottom: solid 4px $color-quaternary;
+    }
+
+    .window-content {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .window-header {
+        padding: .5rem 1rem;
+        background: linear-gradient(90deg, color.adjust($color-quaternary, $lightness: -10%), color.adjust($color-quaternary, $lightness: -5%));
+        text-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+        font-size: 1.1rem;
+        font-weight: 700;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .window-footer {
+        padding: .6rem 1rem;
+        background: linear-gradient(90deg, color.adjust($color-primary, $lightness: -6%), color.adjust($color-primary, $lightness: -8%));
+        text-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+        font-size: 1.1rem;
+        font-weight: 700;
+        border-radius: 0 0 8px 8px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: .5rem;
+        font-family: $font-primary;
+    }
+
+    &.has-sidebar {
+        .window-header {
+            border-radius: 0 8px 0 0;
+        }
+        .window-footer {
+            border-radius: 0 0 8px 0;
+        }
+    }
+
+    .window-body {
+        padding: .75rem 1rem;
+        font-size: 1rem;
+        flex: 1;
+        overflow-y: auto;
+        padding-bottom: 2rem;
+    }
+
+    .window-sidebar {
+        width: 300px;
+        background-color: color.adjust($color-primary, $lightness: 1%);
+        border-right: 1px solid color.adjust($color-primary, $lightness: 10%);
+        border-radius: 8px 0 0 8px;
+        overflow: hidden;
+
+        .window-sidebar-item {
+            font-family: $font-primary;
+            font-size: 1.1rem;
+            padding: .5rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            user-select: none;
+
+            i {
+                width: 24px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            &:hover {
+                background: color.adjust($color-primary, $lightness: 3%);
+            }
+
+            &.active {
+                color: $color-tertiary;
+                background: color.adjust($color-primary, $lightness: 8%);
+            }
+        }
+    }
+}
+
+.preview-container {
+    background: linear-gradient(90deg, color.adjust($color-primary, $lightness: -8%), color.adjust($color-primary, $lightness: -10%));
+}
+
+.font-primary {
+    font-family: $font-primary;
+}
+
+.btn {
+    border-radius: 16px;
+    padding: .25rem .75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+    position: relative;
+    z-index: 2;
+    box-sizing: border-box;
+    transition: transform 0.2s ease;
+    font-family: $font-primary;
+    user-select: none;
+    gap: .5rem;
+
+    i {
+        font-size: 1rem;
+    }
+
+    &:hover {
+        background: $color-quaternary;
+        transform: scale(1.05);
+    }
+
+    &.btn-primary {
+        background: linear-gradient(90deg, color.adjust($color-quaternary, $lightness: -10%), color.adjust($color-quaternary, $lightness: -5%));
+        &:hover {
+            background: $color-quaternary;
+        }
+
+        @keyframes btn-primary-hover {
+            0% {
+                background: linear-gradient(90deg, color.adjust($color-quaternary, $lightness: -10%), color.adjust($color-quaternary, $lightness: -5%));
+            }
+            100% {
+                background: $color-quaternary;
+            }
+        }
+    }
+
+    &.btn-secondary {
+        background: linear-gradient(90deg, color.adjust($color-secondary, $lightness: -6%), color.adjust($color-secondary, $lightness: -8%));
+        color: $color-primary;
+
+        &:hover {
+            background: $color-secondary;
+            color: $color-primary;
+        }
+    }
+
+    &.btn-round {
+        border-radius: 50%;
+        background: linear-gradient(90deg, color.adjust($color-secondary, $lightness: -6%), color.adjust($color-secondary, $lightness: -8%));
+        color: $color-primary;
+        width: 24px;
+        height: 24px;
+
+        &:hover {
+            background: $color-secondary;
+            color: $color-primary;
+        }
+    }
+
+    &.btn-disabled {
+        opacity: 0.5;
+        pointer-events: none;
+        background: #000;
+    }
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+
+    label {
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    input[type="number"],
+    input[type="date"] {
+        outline: none;
+        padding: .5rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: color.adjust($color-primary, $lightness: 1%);
+        color: $color-secondary;
+        font-family: 'Arial', sans-serif;
+        transition: all 0.2s ease;
+
+        &:focus {
+            border-color: $color-quaternary;
+        }
+    }
+
+    .form-range {
+        height: 1.25rem;
+
+        input[type="range"] {
+            width: 50%;
+        }
+    }
+}
+
+.form-help {
+    color: #ffc353;
+    margin-top: .25rem;
+}

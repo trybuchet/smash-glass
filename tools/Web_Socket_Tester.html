@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WebSocket JSON Tester</title>
+
+  <!-- JSONEditor -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsoneditor@10.1.0/dist/jsoneditor.min.css" />
+
+  <style>
+    :root { color-scheme: dark light; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(127,127,127,.3);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    header input,
+    header select,
+    header button {
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    header input {
+      min-width: 340px;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 12px 16px;
+      min-height: 0;
+    }
+
+    .panel {
+      border: 1px solid rgba(127,127,127,.3);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .panel h2 {
+      margin: 0;
+      padding: 10px 12px;
+      font-size: 14px;
+      border-bottom: 1px solid rgba(127,127,127,.3);
+      background: rgba(127,127,127,.08);
+      flex-shrink: 0;
+    }
+
+    #editor {
+      flex: 1;
+      min-height: 0;
+    }
+
+    #log {
+      flex: 1;
+      padding: 10px 12px;
+      overflow: auto;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-top: 1px solid rgba(127,127,127,.3);
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .row button {
+      padding: 8px 10px;
+    }
+
+    .status {
+      margin-left: auto;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(127,127,127,.4);
+    }
+
+    .pill.ok { background: rgba(0,180,0,.12); }
+    .pill.bad { background: rgba(200,0,0,.10); }
+    .pill.mid { background: rgba(200,140,0,.12); }
+
+    .hint {
+      opacity: .75;
+      font-size: 12px;
+    }
+
+    @media (max-width: 980px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      header input {
+        min-width: 200px;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <label>
+      WebSocket URL:
+      <input id="wsUrl" type="text" value="ws://localhost:9002" placeholder="wss://example.com/socket or ws://localhost:1234" />
+    </label>
+
+    <label>
+      Subprotocol:
+      <input id="wsProtocol" type="text" placeholder="(optional) e.g. json, graphql-ws" style="min-width: 220px;" />
+    </label>
+
+    <button id="connectBtn">Connect</button>
+    <button id="disconnectBtn" disabled>Disconnect</button>
+    <button id="clearLogBtn">Clear Log</button>
+
+    <div class="status">
+      <div id="readyStatePill" class="pill bad">DISCONNECTED</div>
+      <div id="bytesPill" class="pill">sent 0B / recv 0B</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>JSON Editor <span class="hint">(edit freely; Ctrl/Cmd+Enter sends)</span></h2>
+      <div id="editor"></div>
+      <div class="row">
+        <button id="sendBtn" disabled>Send</button>
+        <button id="setEmptyObjBtn">Set {}</button>
+        <button id="setEmptyArrBtn">Set []</button>
+        <button id="prettyBtn">Format</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Log</h2>
+      <div id="log"></div>
+      <div class="row">
+        <label style="display:flex; gap:8px; align-items:center;">
+          <input id="autoScroll" type="checkbox" checked />
+          Auto-scroll
+        </label>
+
+        <label style="display:flex; gap:8px; align-items:center;">
+          <input id="tryParseJson" type="checkbox" checked />
+          Pretty-print received JSON
+        </label>
+
+        <label style="display:flex; gap:8px; align-items:center;">
+          <input id="logBinary" type="checkbox" />
+          Log binary frames
+        </label>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/jsoneditor@10.1.0/dist/jsoneditor.min.js"></script>
+
+  <script>
+    (function() {
+      let ws = null;
+      let bytesSent = 0;
+      let bytesRecv = 0;
+
+      const elUrl = document.getElementById("wsUrl");
+      const elProtocol = document.getElementById("wsProtocol");
+      const elConnect = document.getElementById("connectBtn");
+      const elDisconnect = document.getElementById("disconnectBtn");
+      const elSend = document.getElementById("sendBtn");
+      const elClearLog = document.getElementById("clearLogBtn");
+      const elReadyPill = document.getElementById("readyStatePill");
+      const elBytesPill = document.getElementById("bytesPill");
+      const elLog = document.getElementById("log");
+      const elAutoScroll = document.getElementById("autoScroll");
+      const elTryParseJson = document.getElementById("tryParseJson");
+      const elLogBinary = document.getElementById("logBinary");
+      const elPretty = document.getElementById("prettyBtn");
+      const elSetEmptyObj = document.getElementById("setEmptyObjBtn");
+      const elSetEmptyArr = document.getElementById("setEmptyArrBtn");
+
+      const editor = new JSONEditor(document.getElementById("editor"), {
+        mode: "code",
+        modes: ["code", "tree"],
+        search: true,
+        history: true,
+        statusBar: true,
+        navigationBar: true,
+        mainMenuBar: true,
+        onError: function(err) {
+          appendLog("EDITOR_ERROR", err && err.message ? err.message : String(err));
+        }
+      });
+
+      editor.set({
+        "event": "test:event",
+        "data": {
+          
+        }
+      });
+
+      function now() {
+        return new Date().toISOString();
+      }
+
+      function setReadyStatePill(state) {
+        elReadyPill.classList.remove("ok", "bad", "mid");
+
+        if (state === "OPEN") {
+          elReadyPill.classList.add("ok");
+          elReadyPill.textContent = "CONNECTED";
+        } else if (state === "CONNECTING" || state === "CLOSING") {
+          elReadyPill.classList.add("mid");
+          elReadyPill.textContent = state;
+        } else {
+          elReadyPill.classList.add("bad");
+          elReadyPill.textContent = "DISCONNECTED";
+        }
+      }
+
+      function updateButtons() {
+        const open = ws && ws.readyState === WebSocket.OPEN;
+        const connecting = ws && ws.readyState === WebSocket.CONNECTING;
+
+        elConnect.disabled = !!ws && (connecting || open);
+        elDisconnect.disabled = !ws || (!connecting && !open && ws.readyState !== WebSocket.CLOSING);
+        elSend.disabled = !open;
+      }
+
+      function formatBytes(n) {
+        if (n < 1024) return n + "B";
+        if (n < 1024 * 1024) return (n / 1024).toFixed(1) + "KB";
+        return (n / (1024 * 1024)).toFixed(1) + "MB";
+      }
+
+      function updateBytesPill() {
+        elBytesPill.textContent = "sent " + formatBytes(bytesSent) + " / recv " + formatBytes(bytesRecv);
+      }
+
+      function appendLog(kind, data) {
+        elLog.textContent += "[" + now() + "] " + kind + ": " + data + "\n";
+        if (elAutoScroll.checked) {
+          elLog.scrollTop = elLog.scrollHeight;
+        }
+      }
+
+      function connect() {
+        const url = elUrl.value.trim();
+        const protocol = elProtocol.value.trim();
+
+        if (!url) {
+          appendLog("ERROR", "Enter a WebSocket URL.");
+          return;
+        }
+
+        setReadyStatePill("CONNECTING");
+        updateButtons();
+
+        ws = protocol ? new WebSocket(url, protocol) : new WebSocket(url);
+        ws.binaryType = "arraybuffer";
+
+        ws.addEventListener("open", function() {
+          setReadyStatePill("OPEN");
+          updateButtons();
+          appendLog("OPEN", "Connected.");
+        });
+
+        ws.addEventListener("close", function(ev) {
+          appendLog("CLOSE", "code=" + ev.code + " reason=" + (ev.reason || "(none)"));
+          ws = null;
+          setReadyStatePill("DISCONNECTED");
+          updateButtons();
+        });
+
+        ws.addEventListener("error", function() {
+          appendLog("ERROR", "WebSocket error.");
+        });
+
+        ws.addEventListener("message", function(ev) {
+          if (typeof ev.data === "string") {
+            bytesRecv += new TextEncoder().encode(ev.data).length;
+            updateBytesPill();
+
+            if (elTryParseJson.checked) {
+              try {
+                appendLog("RECV", JSON.stringify(JSON.parse(ev.data), null, 2));
+                return;
+              } catch {}
+            }
+
+            appendLog("RECV", ev.data);
+          }
+        });
+      }
+
+      function disconnect() {
+        if (ws) ws.close(1000, "client disconnect");
+      }
+
+      function sendJson() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+        const value = editor.get();
+        const payload = JSON.stringify(value);
+
+        ws.send(payload);
+        bytesSent += new TextEncoder().encode(payload).length;
+        updateBytesPill();
+        appendLog("SEND", JSON.stringify(value, null, 2));
+      }
+
+      elConnect.addEventListener("click", connect);
+      elDisconnect.addEventListener("click", disconnect);
+      elSend.addEventListener("click", sendJson);
+      elClearLog.addEventListener("click", function() { elLog.textContent = ""; });
+      elPretty.addEventListener("click", function() { editor.set(editor.get()); });
+      elSetEmptyObj.addEventListener("click", function() { editor.set({}); });
+      elSetEmptyArr.addEventListener("click", function() { editor.set([]); });
+
+      window.addEventListener("keydown", function(e) {
+        const mod = navigator.platform.toLowerCase().includes("mac") ? e.metaKey : e.ctrlKey;
+        if (mod && e.key === "Enter") {
+          e.preventDefault();
+          sendJson();
+        }
+      });
+
+      updateButtons();
+      updateBytesPill();
+      appendLog("READY", "Paste a ws:// or wss:// URL to begin.");
+    })();
+  </script>
+</body>
+</html>

@@ -1,99 +1,48 @@
-import { createApp } from 'vue';
-import App from '@/App.vue';
-import Config from '@/models/Config';
-import { EventsOn, EventsEmit } from '../wailsjs/runtime/runtime';
-import DOMPurify from 'dompurify';
-import '@/css/main.css';
-
-// Event bus
+import { createApp } from 'vue'
+import { createPinia } from 'pinia';
 import mitt from 'mitt';
-window.$eventBus = mitt();
+import '@/styles/css/legacy.css';
 
-// Default settings
-let opacityLevel = 1;           // Opacity of the overlay
-let zoomLevel = 1;              // Zoom level of the overlay
-window.$designMode = false;     // Disables websocket and shows preview
+import { MoveMainWindowToMonitor } from '@bindings/windowservice';
 
-/**
- * Set default settings when document is ready,
- * then create the Vue app.
- */
-EventsOn('app:start', (data: any) => {
+import App from './components/App.vue'
+import * as ConfirmDialog from 'vuejs-confirm-dialog';
+import form from './components/form';
+import * as dialog from './utils/dialog';
 
-    // Set default settings
-    window.$config = data.config.Overlay as Config;
-    window.$designMode = data.designMode;
-    
-    // Set custom CSS
-    const style = document.getElementById('custom-css');
-    if (style) {
-        style.innerHTML = DOMPurify.sanitize(data.theme);
+import { useConfigStore } from './stores/configStore';
+import { useOverlayStore } from './stores/overlayStore';
+import { useSocketStore } from './stores/socketStore';
+
+async function initApp() {
+
+    // Hook eventbus
+    window.$eventBus = mitt();
+
+    const app = createApp(App)
+    app.use(createPinia())
+    app.use(ConfirmDialog)
+
+    // Register form components
+    for (const key in form) {
+        app.component(key, form[key]);
     }
-    
-    // Set zoom level
-    document.getElementById('app').style.zoom = `${zoomLevel}`;
 
-    // Set opacity level
-    opacityLevel = window.$config.opacity;
-    document.getElementById('app').style.opacity = `${opacityLevel}`;
+    const configStore = useConfigStore()
+    const overlayStore = useOverlayStore()
+    const socketStore = useSocketStore()
 
-    // Create Vue app
-    createApp(App)
-    .mount('#app');
+    await configStore.init();
+    await socketStore.init();
+    await overlayStore.init();
 
-});
+    // Dialog windows
+    window.$dialog = dialog;
 
-// On config update
-EventsOn('app:config', (data: any) => {
-    window.$config = data.config.Overlay as Config;
-    window.$eventBus.emit('config:updated');
-    console.log('Config updated:', window.$config);
+    // Move to the default monitor
+    MoveMainWindowToMonitor(configStore.app.overlay.display);
 
-    const style = document.getElementById('custom-css');
-    if (style) {
-        style.innerHTML = DOMPurify.sanitize(data.theme);
-    }
-});
+    app.mount('#smashglass')
+}
 
-/**
- * Listen for hotkey events and emit them 
- * to the event bus.
- */
-EventsOn('app:shortcut', (data: any) => {
-    window.$eventBus.emit(data);
-});
-
-/**
- * Listen for websocket events and emit them
- * to the event bus.
- */
-EventsOn('app:socket', (json: any) => {
-    console.log('Socket event:', json);
-    const data = JSON.parse(json);
-    console.log('Socket event:', data);
-    window.$eventBus.emit(data.event, data.data);
-});
-
-/**
- * Zooming in and out of the app.
- */
-window.$eventBus.on('zoom:in', () => {
-    zoomLevel = Math.min(1.5, zoomLevel + 0.1);
-    document.getElementById('app').style.zoom = `${zoomLevel}`;
-});
-window.$eventBus.on('zoom:out', () => {
-    zoomLevel = Math.max(0.5, zoomLevel - 0.1);
-    document.getElementById('app').style.zoom = `${zoomLevel}`;
-});
-
-/**
- * Opacity of the app.
- */
-window.$eventBus.on('opacity:in', () => {
-    opacityLevel = Math.min(1, opacityLevel + 0.1);
-    document.getElementById('app').style.opacity = `${opacityLevel}`;
-});
-window.$eventBus.on('opacity:out', () => {
-    opacityLevel = Math.max(0.1, opacityLevel - 0.1);
-    document.getElementById('app').style.opacity = `${opacityLevel}`;
-});
+initApp()

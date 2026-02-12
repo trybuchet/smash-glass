@@ -1,10 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>smash-soda-overlay</title>
-    <link rel="icon" href="#" type="image/x-icon"/>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="img/icons/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Afacad+Flux:wght@100..1000&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>SmashGlass</title>
     <style>
         * {
             box-sizing: border-box;
@@ -14,32 +18,14 @@
             padding: 0;
             font-family: Arial, sans-serif;
             height: 100vh;
-        }
-
-        input {
-            outline: none !important;
-        }
-
-        .row {
-            display: flex;
-            flex-wrap: wrap;
-        }
-
-        .row.space-between {
-            justify-content: space-between;
-        }
-
-        .col {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
+            overflow: hidden;
         }
     </style>
 </head>
-<body>
+
+<body class="theme-default">
     <style id="custom-css"></style>
-<div id="app"></div>
-<script src="./src/main.ts" type="module"></script>
+    <div id="smashglass"></div>
+    <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
-

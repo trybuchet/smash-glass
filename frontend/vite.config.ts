@@ -8,6 +8,25 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
+      "@bindings": path.resolve(__dirname, "bindings/SmashGlass/services/"),
     },
+  },
+  css: {
+    preprocessorOptions: {
+        scss: {
+            api: 'modern',
+            additionalData: `
+                @use "sass:color";
+                @use "@/styles/scss/flare" as *;
+            `,
+        },
+    },
+  },
+  esbuild: {
+    tsconfigRaw: `{
+      "compilerOptions": {
+        "noImplicitThis": false
+      }
+    }`,
   },
 })

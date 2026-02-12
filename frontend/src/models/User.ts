@@ -1,12 +1,11 @@
 export default class User {
-    id: string;
-    name: string;
+    id: string|number = -1;
+    name: string = 'JoeBloggs';
+    role: string = 'user';
     latency: number = 0;
-    hotseatTime: string = '';
 
-    constructor(id: string, name: string) {
-        this.id = id;
-        this.name = name;
+    constructor(data?: Partial<User>) {
+        Object.assign(this, data);
     }
 
     /**

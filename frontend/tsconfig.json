@@ -2,11 +2,11 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "strict": false,
+    "strict": false, // STOP BEING STUPID WAILS :)
     "moduleResolution": "node",
     "experimentalDecorators": true,
     "esModuleInterop": true,
-    "allowJs": false,
+    "allowJs": true,
     "resolveJsonModule": true,
     "sourceMap": true,
     "baseUrl": ".",
@@ -15,11 +15,27 @@
     "skipLibCheck": true,
     "noEmit": true,
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@globals/*": ["src/_globals/*"],
+      "@bindings/*": ["bindings/SmashGlass/services/*"]
     },
-    "typeRoots": ["./node_modules/@types", "src/types"]
+    "typeRoots": ["./node_modules/@types", "src/_globals/types"],
+    /*
+    ! This needs to be set to false in production or it will result
+    This needs to be set to false in production or it will result
+    in a bunch of nonsense errors for vue components...however Pinia
+    store is dependent on this being set to true or it can't defer
+    context properly. For some reason I can't transform this property
+    in vite.config.ts so I have to manually change it when I build...
+    ...help me somebody, please. :)
+    */
+    "noImplicitThis": true,
+    "noImplicitAny": false,
+    "isolatedModules": true
   },
   "include": [
+    "bindings/**/*.ts",
+    "bindings/**/*.js",
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.vue",

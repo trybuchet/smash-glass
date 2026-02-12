@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=My Product
+Comment=A SmashGlass application
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/smashglass.exe %u
+Terminal=false
+Type=Application
+Icon=smashglass.exe
+Categories=Utility;
+StartupWMClass=smashglass.exe
+
+ 
